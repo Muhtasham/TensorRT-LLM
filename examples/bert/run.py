@@ -26,13 +26,42 @@ from tensorrt_llm import logger
 from tensorrt_llm.models import BertForQuestionAnswering, BertModel
 from tensorrt_llm.runtime import Session, TensorInfo
 from transformers import BertTokenizer
+from typing import List, Tuple
 
 from build import get_engine_name  # isort:skip
 
-def tokenize_input(text, tokenizer, max_length=512):
-    # Tokenize input text and prepare `input_ids` and `attention_mask`
-    inputs = tokenizer(text, return_tensors="pt", max_length=max_length, truncation=True, padding="max_length")
-    return inputs["input_ids"], inputs["attention_mask"]
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+def tokenize_input_batch(texts: List[str], tokenizer, max_length: int = 512, max_batch_size: int = 128) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Tokenizes a list of texts into batches with a maximum size, returning
+    concatenated `input_ids` and `attention_mask` for all batches.
+
+    Args:
+    - texts (List[str]): A list of texts to tokenize.
+    - tokenizer: The tokenizer to use.
+    - max_length (int): Maximum sequence length for tokenization.
+    - max_batch_size (int): Maximum size of each batch of texts.
+
+    Returns:
+    - Tuple[torch.Tensor, torch.Tensor]: Concatenated `input_ids` and `attention_mask` for all input texts.
+    """
+    input_ids_list = []
+    attention_mask_list = []
+
+    # Process texts in chunks of max_batch_size
+    for i in range(0, len(texts), max_batch_size):
+        batch_texts = texts[i:i + max_batch_size]
+        batch_inputs = tokenizer(batch_texts, return_tensors="pt", max_length=max_length, truncation=True, padding="max_length")
+        
+        input_ids_list.append(batch_inputs["input_ids"])
+        attention_mask_list.append(batch_inputs["attention_mask"])
+
+    # Concatenate all batch tensors
+    input_ids = torch.cat(input_ids_list, dim=0)
+    attention_mask = torch.cat(attention_mask_list, dim=0)
+
+    return input_ids, attention_mask
 
 def trt_dtype_to_torch(dtype):
     if dtype == trt.float16:

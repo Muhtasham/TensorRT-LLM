@@ -58,7 +58,7 @@ def parse_arguments():
     parser.add_argument('--max_batch_size', type=int, default=128)
     parser.add_argument('--max_input_len', type=int, default=512)
     parser.add_argument('--gpus_per_node', type=int, default=1)
-    parser.add_argument('--output_dir', type=str, default='bert_qa_outputs')
+    parser.add_argument('--output_dir', type=str, default='bert_outputs')
     parser.add_argument('--use_bert_attention_plugin',
                         nargs='?',
                         const='float16',
@@ -88,7 +88,7 @@ def parse_arguments():
                         action='store_true')
     parser.add_argument(
         '--model',
-        default=tensorrt_llm.models.BertForQuestionAnswering.__name__,
+        default=tensorrt_llm.models.BertModel.__name__,
         choices=[
             tensorrt_llm.models.BertModel.__name__,
             tensorrt_llm.models.BertForQuestionAnswering.__name__

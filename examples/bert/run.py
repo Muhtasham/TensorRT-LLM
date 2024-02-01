@@ -77,7 +77,7 @@ def trt_dtype_to_torch(dtype):
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_level', type=str, default='info')
-    parser.add_argument('--engine_dir', type=str, default='bert_qa_outputs')
+    parser.add_argument('--engine_dir', type=str, default='bert_outputs')
 
     return parser.parse_args()
 
@@ -113,15 +113,19 @@ if __name__ == '__main__':
         engine_buffer = f.read()
     logger.info(f'Creating session from engine')
     session = Session.from_serialized_engine(engine_buffer)
-
+    
     for i in range(3):
-        batch_size = 8
+        batch_size = 128
         seq_len = (i + 1) * 32
+        logger.info(f'Running inference with batch size {batch_size} and sequence length {seq_len}')
         input_ids = torch.randint(100, (batch_size, seq_len)).int().cuda()
+        logger.info(f'Input shape: {input_ids.shape}')
         input_lengths = seq_len * torch.ones(
             (batch_size, ), dtype=torch.int32, device='cuda')
+        logger.info(f'Input lengths shape: {input_lengths.shape}')
         token_type_ids = torch.randint(100, (batch_size, seq_len)).int().cuda()
-
+        logger.info(f'Token type ids shape: {token_type_ids.shape}')
+        
         inputs = {
             'input_ids': input_ids,
             'input_lengths': input_lengths,

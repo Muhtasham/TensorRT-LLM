@@ -25,9 +25,14 @@ import tensorrt_llm
 from tensorrt_llm import logger
 from tensorrt_llm.models import BertForQuestionAnswering, BertModel
 from tensorrt_llm.runtime import Session, TensorInfo
+from transformers import BertTokenizer
 
 from build import get_engine_name  # isort:skip
 
+def tokenize_input(text, tokenizer, max_length=512):
+    # Tokenize input text and prepare `input_ids` and `attention_mask`
+    inputs = tokenizer(text, return_tensors="pt", max_length=max_length, truncation=True, padding="max_length")
+    return inputs["input_ids"], inputs["attention_mask"]
 
 def trt_dtype_to_torch(dtype):
     if dtype == trt.float16:
@@ -43,7 +48,7 @@ def trt_dtype_to_torch(dtype):
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_level', type=str, default='info')
-    parser.add_argument('--engine_dir', type=str, default='bert_outputs')
+    parser.add_argument('--engine_dir', type=str, default='bert_qa_outputs')
 
     return parser.parse_args()
 
@@ -81,7 +86,7 @@ if __name__ == '__main__':
     session = Session.from_serialized_engine(engine_buffer)
 
     for i in range(3):
-        batch_size = (i + 1) * 4
+        batch_size = 8
         seq_len = (i + 1) * 32
         input_ids = torch.randint(100, (batch_size, seq_len)).int().cuda()
         input_lengths = seq_len * torch.ones(
@@ -112,6 +117,8 @@ if __name__ == '__main__':
             output_name = 'logits'
         else:
             assert False, f"Unknown BERT model {model_name}"
+        
+        logger.info(f'Running inference with model {model_name} and output {output_name}')
 
         assert output_name in outputs, f'{output_name} not found in outputs, check if build.py set the name correctly'
 
@@ -119,3 +126,4 @@ if __name__ == '__main__':
         assert ok, "Runtime execution failed"
         torch.cuda.synchronize()
         res = outputs[output_name]
+        logger.info(f'Output shape: {res.shape}')

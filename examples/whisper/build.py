@@ -26,6 +26,7 @@ from tensorrt_llm.functional import LayerNormPositionType, LayerNormType
 from tensorrt_llm.logger import logger
 from tensorrt_llm.network import net_guard
 from tensorrt_llm.quantization import QuantMode
+from tensorrt_llm.quantization.quantize import weight_only_quantize
 
 MODEL_ENCODER_NAME = "whisper_encoder"
 MODEL_DECODER_NAME = "whisper_decoder"
@@ -54,7 +55,7 @@ def parse_arguments():
     parser.add_argument('--model_dir', type=str, default="assets")
     parser.add_argument('--model_name',
                         type=str,
-                        default="large-v3",
+                        default="tiny",
                         choices=[
                             "large-v3",
                             "large-v2",

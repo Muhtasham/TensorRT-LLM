@@ -20,6 +20,7 @@ import torch
 from datasets import load_dataset
 from torch.utils.data import DataLoader
 from whisper.normalizers import EnglishTextNormalizer
+from whisper_utils import log_mel_spectrogram
 
 try:
     from faster_whisper import WhisperModel
@@ -117,7 +118,7 @@ def decode_dataset(
 if __name__ == '__main__':
     args = parse_arguments()
     normallizer = EnglishTextNormalizer()
-    model_size_or_path = "large-v3"
+    model_size_or_path = "tiny"
     model = WhisperModel(model_size_or_path,
                          device="cuda",
                          compute_type="float16")

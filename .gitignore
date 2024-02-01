@@ -27,3 +27,4 @@ tensorrt_llm/bindings/*.pyi
 .coverage.*
 results_trt/
 dist/*
+examples/whisper

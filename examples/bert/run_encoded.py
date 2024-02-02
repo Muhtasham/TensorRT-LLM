@@ -27,11 +27,11 @@ from tensorrt_llm.models import BertForQuestionAnswering, BertModel
 from tensorrt_llm.runtime import Session, TensorInfo
 from transformers import BertTokenizer
 
-tensorrt_llm.logger.set_level('info')
+tensorrt_llm.logger.set_level('verbose')
 
 from build import get_engine_name  # isort:skip
 
-enc = BertTokenizer.from_pretrained('bert-base-uncased', trust_remote=True)
+enc = BertTokenizer.from_pretrained('bert-large-cased-whole-word-masking', trust_remote=True)
 
 mask_token_id = enc.convert_tokens_to_ids('[MASK]')
 logger.info(f"Mask token ID: {mask_token_id}")

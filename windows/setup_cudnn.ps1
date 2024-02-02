@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory=$true)]
-    [string]$cudnnVersion,  # cuDNN version must be specified
+    [string]$cudnnVersion,  # cuDNN version must be specified e.g "v8.9.7.29"
 
     [Parameter(Mandatory=$true)]
     [string]$cudnnPackagePath  # Path to the unzipped cuDNN files must be specified

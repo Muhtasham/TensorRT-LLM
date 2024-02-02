@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,10 +23,10 @@ import tensorrt as trt
 
 import tensorrt_llm
 from tensorrt_llm import logger
-from tensorrt_llm.models import BertForQuestionAnswering, BertModel
 from tensorrt_llm.runtime import Session, TensorInfo
 
 from build import get_engine_name  # isort:skip
+
 
 def trt_dtype_to_torch(dtype):
     if dtype == trt.float16:
@@ -78,19 +78,15 @@ if __name__ == '__main__':
         engine_buffer = f.read()
     logger.info(f'Creating session from engine')
     session = Session.from_serialized_engine(engine_buffer)
-    
+
     for i in range(3):
-        batch_size = 128
+        batch_size = (i + 1) * 4
         seq_len = (i + 1) * 32
-        logger.info(f'Running inference with batch size {batch_size} and sequence length {seq_len}')
         input_ids = torch.randint(100, (batch_size, seq_len)).int().cuda()
-        logger.info(f'Input shape: {input_ids.shape}')
         input_lengths = seq_len * torch.ones(
             (batch_size, ), dtype=torch.int32, device='cuda')
-        logger.info(f'Input lengths shape: {input_lengths.shape}')
         token_type_ids = torch.randint(100, (batch_size, seq_len)).int().cuda()
-        logger.info(f'Token type ids shape: {token_type_ids.shape}')
-        
+
         inputs = {
             'input_ids': input_ids,
             'input_lengths': input_lengths,
@@ -109,14 +105,16 @@ if __name__ == '__main__':
                                 device='cuda')
             for t in output_info
         }
-        if (model_name == BertModel.__name__):
+        if (model_name == 'BertModel' or model_name == 'RobertaModel'):
             output_name = 'hidden_states'
-        elif (model_name == BertForQuestionAnswering.__name__):
+        elif (model_name == 'BertForQuestionAnswering'
+              or model_name == 'RobertaForQuestionAnswering'):
+            output_name = 'logits'
+        elif (model_name == 'BertForSequenceClassification'
+              or model_name == 'RobertaForSequenceClassification'):
             output_name = 'logits'
         else:
             assert False, f"Unknown BERT model {model_name}"
-        
-        logger.info(f'Running inference with model {model_name} and output {output_name}')
 
         assert output_name in outputs, f'{output_name} not found in outputs, check if build.py set the name correctly'
 
@@ -124,4 +122,3 @@ if __name__ == '__main__':
         assert ok, "Runtime execution failed"
         torch.cuda.synchronize()
         res = outputs[output_name]
-        logger.info(f'Output shape: {res.shape}')

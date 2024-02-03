@@ -38,7 +38,7 @@ from tensorrt_llm.runtime.session import Session, TensorInfo
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_level', type=str, default='info')
-    parser.add_argument('--engine_dir', type=str, default='whisper_outputs')
+    parser.add_argument('--engine_dir', type=str, default='tinyrt')
     parser.add_argument('--results_dir', type=str, default='tmp')
     parser.add_argument('--assets_dir', type=str, default=None)
     parser.add_argument('--input_file', type=str, default=None)
@@ -207,7 +207,7 @@ class WhisperDecoding:
 
 class WhisperTRTLLM(object):
 
-    def __init__(self, engine_dir, debug_mode=False, assets_dir=None):
+    def __init__(self, engine_dir="tinyrt", debug_mode=True, assets_dir=None):
         world_size = 1
         runtime_rank = tensorrt_llm.mpi_rank()
         runtime_mapping = tensorrt_llm.Mapping(world_size, runtime_rank)
@@ -251,18 +251,24 @@ class WhisperTRTLLM(object):
 
 def decode_wav_file(
         input_file_path,
-        model,
+        model=WhisperTRTLLM(),
         text_prefix="<|startoftranscript|><|en|><|transcribe|><|notimestamps|>",
         dtype='float16',
         batch_size=1,
         num_beams=1,
-        normalizer=None,
-        mel_filters_dir=None):
+        normalizer=EnglishTextNormalizer(),
+        mel_filters_dir=None,
+        return_duration=False):
+
+    logger.info(f"input_file_path: {input_file_path}")
+    
     mel, total_duration = log_mel_spectrogram(input_file_path,
                                               model.n_mels,
                                               device='cuda',
                                               return_duration=True,
                                               mel_filters_dir=mel_filters_dir)
+    logger.info(f"total_duration: {total_duration:.3f} seconds")
+    
     mel = mel.type(str_dtype_to_torch(dtype))
     mel = mel.unsqueeze(0)
     # repeat the mel spectrogram to match the batch size
@@ -276,7 +282,7 @@ def decode_wav_file(
         prediction = normalizer(prediction)
     print(f"prediction: {prediction}")
     results = [(0, [""], prediction.split())]
-    return results, total_duration
+    return results, total_duration if return_duration else prediction
 
 
 def collate_wrapper(batch):

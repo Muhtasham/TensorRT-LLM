@@ -283,6 +283,9 @@ def decode_wav_file(
         prediction = normalizer(prediction)
     print(f"prediction: {prediction}")
     results = [(0, [""], prediction.split())]
+    
+    del model
+
     if return_duration_info:
         logger.info("Returning results and total_duration")  
         return results, total_duration

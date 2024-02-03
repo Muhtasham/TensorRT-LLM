@@ -258,7 +258,7 @@ def decode_wav_file(
         num_beams=1,
         normalizer=EnglishTextNormalizer(),
         mel_filters_dir=None,
-        return_duration=False):
+        return_duration_info=False):
 
     logger.info(f"input_file_path: {input_file_path}")
     
@@ -267,6 +267,7 @@ def decode_wav_file(
                                               device='cuda',
                                               return_duration=True,
                                               mel_filters_dir=mel_filters_dir)
+    
     logger.info(f"total_duration: {total_duration:.3f} seconds")
     
     mel = mel.type(str_dtype_to_torch(dtype))
@@ -282,8 +283,12 @@ def decode_wav_file(
         prediction = normalizer(prediction)
     print(f"prediction: {prediction}")
     results = [(0, [""], prediction.split())]
-    return results, total_duration if return_duration else prediction
-
+    if return_duration_info:
+        logger.info("Returning results and total_duration")  
+        return results, total_duration
+    else:
+        logger.info("Returning prediction only")
+        return prediction
 
 def collate_wrapper(batch):
     speeches, labels, ids = [], [], []

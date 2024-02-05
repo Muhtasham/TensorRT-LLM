@@ -86,6 +86,7 @@ def load_audio_wav_format(wav_path):
     channels = "Mono" if waveform.ndim == 1 else "Stereo"
 
     if waveform.ndim == 2:
+        print("Stereo audio detected. Converting to mono.")
         # Convert stereo to mono by averaging the channels
         waveform = waveform.mean(axis=1)
     

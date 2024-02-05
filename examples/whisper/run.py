@@ -33,7 +33,7 @@ from tensorrt_llm._utils import (str_dtype_to_torch, str_dtype_to_trt,
                                  trt_dtype_to_torch)
 from tensorrt_llm.runtime import ModelConfig, SamplingConfig
 from tensorrt_llm.runtime.session import Session, TensorInfo
-
+from rich import print as rprint
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -261,36 +261,43 @@ def decode_wav_file(
         return_duration_info=True):
 
     logger.info(f"input_file_path: {input_file_path}")
+
+    start_time = time.time()
     
     mel, total_duration = log_mel_spectrogram(input_file_path,
                                               model.n_mels,
                                               device='cuda',
                                               return_duration=True,
                                               mel_filters_dir=mel_filters_dir)
-    
-    logger.info(f"total_duration: {total_duration:.3f} seconds")
-    
+        
     mel = mel.type(str_dtype_to_torch(dtype))
     mel = mel.unsqueeze(0)
     # repeat the mel spectrogram to match the batch size
     mel = mel.repeat(batch_size, 1, 1)
     predictions = model.process_batch(mel, text_prefix, num_beams)
     prediction = predictions[0]
-
+    elapsed = time.time() - start_time
+    
     # remove all special tokens in the prediction
     prediction = re.sub(r'<\|.*?\|>', '', prediction)
     if normalizer:
         prediction = normalizer(prediction)
-    print(f"prediction: {prediction}")
+    rprint(f"prediction: {prediction}")
     results = [(0, [""], prediction.split())]
     
+    # RTF = Real Time Factor is the ratio of the total duration of the audio to the processing time of the audio
+    # it is a measure of how much real time it takes to process 1 second of audio
+    rtf = elapsed / total_duration
+    s = f"RTF: {rtf:.4f}\n"
+    s += f"total_duration: {total_duration:.3f} seconds\n"
+    s += f"processing time: {elapsed:.3f} seconds \n"
+    rprint(s)
+
     del model
 
     if return_duration_info:
-        logger.info("Returning results and total_duration")  
         return results, total_duration
     else:
-        logger.info("Returning prediction only")
         return prediction
 
 def collate_wrapper(batch):
@@ -357,7 +364,6 @@ if __name__ == '__main__':
             num_beams=args.num_beams,
             normalizer=normallizer,
             mel_filters_dir=args.assets_dir)
-    start_time = time.time()
     if args.input_file:
         results, total_duration = decode_wav_file(
             args.input_file,
@@ -375,7 +381,6 @@ if __name__ == '__main__':
             num_beams=args.num_beams,
             normalizer=normallizer,
             mel_filters_dir=args.assets_dir)
-    elapsed = time.time() - start_time
     results = sorted(results)
 
     Path(args.results_dir).mkdir(parents=True, exist_ok=True)
@@ -388,19 +393,5 @@ if __name__ == '__main__':
                                              results,
                                              enable_log=True)
         if args.dataset == "hf-internal-testing/librispeech_asr_dummy":
-            #assert total_error_rate <= 3.1, f"Word Error rate using whisper large model should be less than 3.1% but got {total_error_rate}"
+            #assert total_error_rate <= 3.1, f"Word Error rate using whisper large model should be less than 3.1% but got {total_error_rate}"        
             pass
-        
-    rtf = elapsed / total_duration
-    s = f"RTF: {rtf:.4f}\n"
-    s += f"total_duration: {total_duration:.3f} seconds\n"
-    s += f"({total_duration/3600:.2f} hours)\n"
-    s += f"processing time: {elapsed:.3f} seconds " f"({elapsed/3600:.2f} hours)\n"
-    s += f"batch size: {args.batch_size}\n"
-    s += f"num_beams: {args.num_beams}\n"
-    print(s)
-
-    with open(f"{args.results_dir}/rtf-{args.name}.txt", "w") as f:
-        f.write(s)
-
-    del model

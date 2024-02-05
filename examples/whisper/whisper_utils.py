@@ -25,6 +25,8 @@ import numpy as np
 import soundfile
 import torch
 import torch.nn.functional as F
+import librosa
+import time
 
 Pathlike = Union[str, Path]
 
@@ -69,18 +71,30 @@ def load_audio(file: str, sr: int = SAMPLE_RATE):
     return np.frombuffer(out, np.int16).flatten().astype(np.float32) / 32768.0
 
 
-def load_audio_wav_format(wav_path):
+def load_audio_wav_format(wav_path, debug=False):
     # Ensure the audio file is in .wav format
     assert wav_path.endswith('.wav'), f"Only support .wav format, but got {wav_path}"
     
     # Read the audio file
     waveform, sample_rate = soundfile.read(wav_path)
-    
+
+    # If the sample rate is not 16000 Hz, resample it to 16000 Hz
+    if sample_rate != SAMPLE_RATE:
+        print(f"Resampling audio from {sample_rate} Hz to {SAMPLE_RATE} Hz")
+        # calculate the time for resampling
+        now = time.time()
+        waveform = librosa.resample(waveform.T, orig_sr=sample_rate, target_sr=SAMPLE_RATE)
+        end = time.time()
+        print(f"Resampling took {end - now:.2f} seconds")
+        sample_rate = SAMPLE_RATE
+
+        # save the resampled audio to a new file
+        resampled_wav_path = wav_path.replace('.wav', f'_resampled_{SAMPLE_RATE}Hz.wav')
+        soundfile.write(resampled_wav_path, waveform.T, sample_rate)
+        print(f"Resampled audio saved to {resampled_wav_path}")
+
     # Ensure the sample rate is 16000 Hz
-    assert sample_rate == 16000, f"Only support 16k sample rate, but got {sample_rate}"
-    
-    # Calculate duration in seconds
-    duration_seconds = len(waveform) / sample_rate
+    assert sample_rate == SAMPLE_RATE, f"Only support 16k sample rate, but got {sample_rate}"
     
     # Identify if the audio is mono or stereo
     channels = "Mono" if waveform.ndim == 1 else "Stereo"
@@ -90,11 +104,12 @@ def load_audio_wav_format(wav_path):
         # Convert stereo to mono by averaging the channels
         waveform = waveform.mean(axis=1)
     
-    # Print additional information about the audio file
-    print(f"Loaded WAV file: {wav_path}")
-    print(f"Sample Rate: {sample_rate} Hz")
-    print(f"Total Samples: {len(waveform)}")
-    print(f"Channels: {channels}")
+    if debug:
+        # Print additional information about the audio file
+        print(f"Loaded WAV file: {wav_path}")
+        print(f"Sample Rate: {sample_rate} Hz")
+        print(f"Total Samples: {len(waveform)}")
+        print(f"Channels: {channels}")
 
     return waveform, sample_rate
 

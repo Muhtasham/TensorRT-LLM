@@ -57,8 +57,8 @@ def parse_arguments():
                         type=str,
                         default="tiny",
                         choices=[
-                            "large-v3",
-                            "large-v2",
+                            "large-v3", 
+                            "tiny",
                         ])
     parser.add_argument('--quantize_dir', type=str, default="quantize/1-gpu")
     parser.add_argument('--dtype',
@@ -131,7 +131,7 @@ def parse_arguments():
         const='int8',
         type=str,
         nargs='?',
-        default='int8',
+        default='int4',
         choices=['int8', 'int4'],
         help=
         'Define the precision for the weights when using weight-only quantization.'

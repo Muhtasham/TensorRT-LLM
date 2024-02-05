@@ -34,10 +34,11 @@ from tensorrt_llm._utils import (str_dtype_to_torch, str_dtype_to_trt,
 from tensorrt_llm.runtime import ModelConfig, SamplingConfig
 from tensorrt_llm.runtime.session import Session, TensorInfo
 from rich import print as rprint
+from rich.table import Table
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log_level', type=str, default='info')
+    parser.add_argument('--log_level', type=str, default='verbose')
     parser.add_argument('--engine_dir', type=str, default='tinyrt')
     parser.add_argument('--results_dir', type=str, default='tmp')
     parser.add_argument('--assets_dir', type=str, default=None)
@@ -288,10 +289,24 @@ def decode_wav_file(
     # RTF = Real Time Factor is the ratio of the total duration of the audio to the processing time of the audio
     # it is a measure of how much real time it takes to process 1 second of audio
     rtf = elapsed / total_duration
-    s = f"RTF: {rtf:.4f}\n"
-    s += f"total_duration: {total_duration:.3f} seconds\n"
-    s += f"processing time: {elapsed:.3f} seconds \n"
-    rprint(s)
+    
+    # Create a table
+    table = Table(show_header=True, header_style="bold magenta")
+
+    # Add columns
+    table.add_column("Metric", width=20, no_wrap=True)
+    table.add_column("Value", style="green", justify="right", no_wrap=True)
+
+    # Add rows of data
+    table.add_row("RTF", f"{rtf:.4f}")
+    table.add_row("Total Duration", f"{total_duration:.3f} seconds")
+    table.add_row("Processing Time", f"{elapsed:.3f} seconds")
+    table.add_row("Batch Size", str(batch_size))
+    table.add_row("Num Beams", str(num_beams))
+    table.add_row("Dtype", dtype)
+
+    # Print the table
+    rprint(table)
 
     del model
 

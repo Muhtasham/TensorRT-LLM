@@ -37,6 +37,9 @@ pip install -r requirements.txt
 
 # Build the tiny model using a single GPU with plugins.
 python3 build.py --output_dir tinyrt --use_gpt_attention_plugin --use_gemm_plugin --use_layernorm_plugin  --use_bert_attention_plugin
+
+# Build the tiny model using a single GPU with plugins without layernorm
+python3 build.py --output_dir tinyrt_no_layernorm --use_gpt_attention_plugin --use_gemm_plugin  --use_bert_attention_plugin
 ```
 
 ### Run
@@ -47,6 +50,10 @@ output_dir=./tinyrt
 # If the input file does not have a .wav extension, ffmpeg needs to be installed with the following command:
 # apt-get update && apt-get install -y ffmpeg
 python3 run.py --name single_wav_test --engine_dir $output_dir --input_file assets/1221-135766-0002.wav
+
+# decode a custom audio file and different engine
+python3 run.py --name single_wav_test --engine_dir ./tinyrt_no_layernorm --input_file assets/gpusong.wav
+
 # decode a whole dataset
 python3 run.py --engine_dir $output_dir --dataset hf-internal-testing/librispeech_asr_dummy --enable_warmup --name librispeech_dummy_tiny_plugin
 ```

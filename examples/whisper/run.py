@@ -48,7 +48,7 @@ def parse_arguments():
     parser.add_argument('--name',
                         type=str,
                         default="librispeech_dummy_benchmark")
-    parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--num_beams', type=int, default=1)
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--enable_warmup', action='store_true')
@@ -258,7 +258,7 @@ def decode_wav_file(
         num_beams=1,
         normalizer=EnglishTextNormalizer(),
         mel_filters_dir=None,
-        return_duration_info=False):
+        return_duration_info=True):
 
     logger.info(f"input_file_path: {input_file_path}")
     

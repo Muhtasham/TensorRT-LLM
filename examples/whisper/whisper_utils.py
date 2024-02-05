@@ -70,11 +70,31 @@ def load_audio(file: str, sr: int = SAMPLE_RATE):
 
 
 def load_audio_wav_format(wav_path):
-    # make sure audio in .wav format
-    assert wav_path.endswith(
-        '.wav'), f"Only support .wav format, but got {wav_path}"
+    # Ensure the audio file is in .wav format
+    assert wav_path.endswith('.wav'), f"Only support .wav format, but got {wav_path}"
+    
+    # Read the audio file
     waveform, sample_rate = soundfile.read(wav_path)
+    
+    # Ensure the sample rate is 16000 Hz
     assert sample_rate == 16000, f"Only support 16k sample rate, but got {sample_rate}"
+    
+    # Calculate duration in seconds
+    duration_seconds = len(waveform) / sample_rate
+    
+    # Identify if the audio is mono or stereo
+    channels = "Mono" if waveform.ndim == 1 else "Stereo"
+
+    if waveform.ndim == 2:
+        # Convert stereo to mono by averaging the channels
+        waveform = waveform.mean(axis=1)
+    
+    # Print additional information about the audio file
+    print(f"Loaded WAV file: {wav_path}")
+    print(f"Sample Rate: {sample_rate} Hz")
+    print(f"Total Samples: {len(waveform)}")
+    print(f"Channels: {channels}")
+
     return waveform, sample_rate
 
 
@@ -158,6 +178,7 @@ def log_mel_spectrogram(
     torch.Tensor, shape = (80 or 128, n_frames)
         A Tensor that contains the Mel spectrogram
     """
+
     if not torch.is_tensor(audio):
         if isinstance(audio, str):
             if audio.endswith('.wav'):
